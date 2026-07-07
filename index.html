@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1 Minute — сколько зарабатывает YouTube-канал за минуту</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>▶️</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="bg-glow"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-icon">▶</span>
+    <span class="brand-text">1 Minute</span>
+  </div>
+  <a class="topbar-link" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Получить API-ключ</a>
+</header>
+
+<main class="container">
+
+  <section class="hero">
+    <h1>Сколько канал зарабатывает <span class="accent">за 1 минуту</span> видео?</h1>
+    <p class="hero-sub">Вставь ссылку на YouTube-канал — посчитаем суммарные просмотры, оценим доход и выведем средний заработок на каждую минуту контента.</p>
+  </section>
+
+  <section class="card form-card" id="formCard">
+
+    <div class="field">
+      <label for="apiKey">
+        API-ключ YouTube Data API v3
+        <button type="button" class="ghost-btn" id="toggleHelp">как получить?</button>
+      </label>
+      <div class="input-row">
+        <input type="password" id="apiKey" placeholder="AIzaSy...">
+        <button type="button" class="icon-btn" id="toggleKeyVisibility" title="Показать/скрыть">👁</button>
+      </div>
+      <label class="checkbox-row">
+        <input type="checkbox" id="saveKey">
+        <span>Запомнить ключ в этом браузере</span>
+      </label>
+
+      <div class="help-box" id="helpBox" hidden>
+        <ol>
+          <li>Открой <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> и создай проект (бесплатно).</li>
+          <li>В библиотеке API найди и включи <b>YouTube Data API v3</b>.</li>
+          <li>Зайди в раздел <b>Credentials → Create Credentials → API key</b>.</li>
+          <li>Скопируй ключ и вставь в поле выше. Ключ хранится только в твоём браузере и никуда не отправляется, кроме googleapis.com.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="channelInput">Ссылка на канал, @handle или его ID</label>
+      <input type="text" id="channelInput" placeholder="https://www.youtube.com/@mrbeast">
+    </div>
+
+    <div class="field">
+      <label>Регион аудитории (влияет на оценку RPM — дохода за 1000 просмотров)</label>
+      <div class="pill-group" id="regionPills">
+        <button type="button" class="pill active" data-region="ru" data-rpm="0.7">🇷🇺 Россия / СНГ · ~$0.7</button>
+        <button type="button" class="pill" data-region="en" data-rpm="1.75">🌍 Англоязычный · ~$1.5–2</button>
+        <button type="button" class="pill" data-region="custom" data-rpm="">✏️ Свой RPM</button>
+      </div>
+      <div class="slider-row" id="customRpmRow" hidden>
+        <input type="range" id="customRpm" min="0.1" max="6" step="0.1" value="1.2">
+        <span id="customRpmValue">$1.2</span> <span class="muted">за 1000 просмотров</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="checkbox-row toggle-label">
+        <input type="checkbox" id="realIncomeToggle">
+        <span>У меня есть реальный доход за последние 30 дней — использовать его вместо оценки по RPM</span>
+      </label>
+      <div class="slider-row" id="realIncomeRow" hidden>
+        <input type="number" id="realIncome" min="0" step="0.01" placeholder="Например, 240">
+        <span class="muted">$ за последние 30 дней</span>
+      </div>
+    </div>
+
+    <button class="analyze-btn" id="analyzeBtn">Анализировать канал</button>
+
+    <p class="error-msg" id="errorMsg" hidden></p>
+  </section>
+
+  <section class="card progress-card" id="progressCard" hidden>
+    <div class="spinner"></div>
+    <p id="progressText">Ищем канал…</p>
+    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+  </section>
+
+  <section class="results" id="results" hidden>
+
+    <div class="card channel-card">
+      <img id="chThumb" class="channel-avatar" alt="">
+      <div class="channel-meta">
+        <h2 id="chTitle">—</h2>
+        <p id="chSubs" class="muted">—</p>
+      </div>
+    </div>
+
+    <div class="stat-grid">
+      <div class="card stat-card">
+        <span class="stat-label">Всего просмотров</span>
+        <span class="stat-value" id="statViews">0</span>
+      </div>
+      <div class="card stat-card">
+        <span class="stat-label">Видео на канале</span>
+        <span class="stat-value" id="statVideos">0</span>
+      </div>
+      <div class="card stat-card">
+        <span class="stat-label">Суммарная длительность</span>
+        <span class="stat-value" id="statDuration">0</span>
+      </div>
+      <div class="card stat-card">
+        <span class="stat-label">Использованный RPM</span>
+        <span class="stat-value small" id="statRpm">—</span>
+      </div>
+      <div class="card stat-card">
+        <span class="stat-label">Оценка дохода канала</span>
+        <span class="stat-value" id="statRevenue">$0</span>
+      </div>
+      <div class="card stat-card highlight">
+        <span class="stat-label">Доход за 1 минуту видео</span>
+        <span class="stat-value big" id="statPerMinute">$0</span>
+      </div>
+    </div>
+
+    <p class="disclaimer">
+      * Это приблизительная оценка на основе публичных данных YouTube. Реальный доход зависит от гео и возраста зрителей,
+      сезона, ниши, длины роликов, вовлечённости рекламодателей и включённой монетизации у самого канала.
+      Точные цифры знает только владелец канала (YouTube Studio → Аналитика → Доход).
+    </p>
+  </section>
+
+</main>
+
+<footer class="footer">Работает напрямую в браузере через YouTube Data API v3. Ключ и данные никуда не сохраняются.</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
