@@ -1,6 +1,7 @@
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 const COOKIE = 'PREF=hl=en&gl=US; SOCS=CAI';
 const MAX_PAGES = 15; // safety cap: ~450 recent videos is enough to cover a month for virtually any channel
+const WINDOW_DAYS = 28; // matches YouTube Studio's default "Last 28 days" analytics range
 
 function corsHeaders() {
   return {
@@ -151,9 +152,9 @@ async function fetchContinuation(apiKey, clientVersion, token) {
   return appended ? appended.continuationItems : null;
 }
 
-const SNAPSHOT_MAX_AGE_MS = 45 * 86400000;
+const SNAPSHOT_MAX_AGE_MS = 42 * 86400000;
 const SNAPSHOT_MIN_GAP_MS = 12 * 3600000;
-const TARGET_WINDOW_MS = 30 * 86400000;
+const TARGET_WINDOW_MS = WINDOW_DAYS * 86400000;
 
 async function getSnapshots(env, channelId) {
   if (!env?.SNAPSHOTS) return [];
@@ -170,11 +171,11 @@ async function recordSnapshotAndMeasure(env, channelId, currentViews, now) {
   if (!channelId || currentViews === null) return null;
   let snapshots = await getSnapshots(env, channelId);
 
-  // find the stored snapshot closest to 30 days ago (accept 20-40 day range)
+  // find the stored snapshot closest to WINDOW_DAYS ago (accept a +/-8 day tolerance)
   let best = null;
   for (const s of snapshots) {
     const age = now - s.ts;
-    if (age >= 20 * 86400000 && age <= 40 * 86400000) {
+    if (age >= (WINDOW_DAYS - 8) * 86400000 && age <= (WINDOW_DAYS + 8) * 86400000) {
       if (!best || Math.abs(age - TARGET_WINDOW_MS) < Math.abs(now - best.ts - TARGET_WINDOW_MS)) best = s;
     }
   }
@@ -183,7 +184,7 @@ async function recordSnapshotAndMeasure(env, channelId, currentViews, now) {
   if (best && currentViews >= best.views) {
     const days = (now - best.ts) / 86400000;
     const delta = currentViews - best.views;
-    measured = { views: Math.round((delta / days) * 30), days: Math.round(days) };
+    measured = { views: Math.round((delta / days) * WINDOW_DAYS), days: Math.round(days) };
   }
 
   const last = snapshots[snapshots.length - 1];
@@ -234,7 +235,7 @@ async function analyzeChannel(input, env) {
 
   while (continuationToken && pages < MAX_PAGES) {
     const oldestSoFar = videos[videos.length - 1];
-    if (oldestSoFar && oldestSoFar.daysAgo > 31) break; // already past last month
+    if (oldestSoFar && oldestSoFar.daysAgo > WINDOW_DAYS) break; // already past the window
     if (!apiKey || !clientVersion) break;
     const items = await fetchContinuation(apiKey, clientVersion, continuationToken);
     if (!items) break;
@@ -243,9 +244,9 @@ async function analyzeChannel(input, env) {
     continuationToken = next.continuationToken;
     pages += 1;
   }
-  if (continuationToken && videos[videos.length - 1]?.daysAgo <= 31) truncated = true;
+  if (continuationToken && videos[videos.length - 1]?.daysAgo <= WINDOW_DAYS) truncated = true;
 
-  const lastMonth = videos.filter((v) => v.daysAgo <= 31);
+  const lastMonth = videos.filter((v) => v.daysAgo <= WINDOW_DAYS);
   const newVideoViews = lastMonth.reduce((s, v) => s + v.viewCount, 0);
   const secondsLastMonth = lastMonth.reduce((s, v) => s + (v.durationSec || 0), 0);
   const videosWithDuration = lastMonth.filter((v) => v.durationSec !== null).length;
