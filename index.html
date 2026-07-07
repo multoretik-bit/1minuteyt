@@ -51,11 +51,17 @@
     <div class="field">
       <label class="checkbox-row toggle-label">
         <input type="checkbox" id="realIncomeToggle">
-        <span>У меня есть реальный доход за последний месяц — использовать его вместо оценки по RPM</span>
+        <span>У меня есть точные данные за месяц из YouTube Studio — использовать их вместо оценки</span>
       </label>
-      <div class="slider-row" id="realIncomeRow" hidden>
-        <input type="number" id="realIncome" min="0" step="0.01" placeholder="Например, 240">
-        <span class="muted">$ за последний месяц</span>
+      <div class="real-data-grid" id="realIncomeRow" hidden>
+        <div class="slider-row">
+          <input type="number" id="realViews" min="0" step="1" placeholder="Например, 1400000">
+          <span class="muted">просмотров за месяц</span>
+        </div>
+        <div class="slider-row">
+          <input type="number" id="realIncome" min="0" step="0.01" placeholder="Например, 240">
+          <span class="muted">$ дохода за месяц</span>
+        </div>
       </div>
     </div>
 
@@ -90,6 +96,7 @@
       <div class="card stat-card">
         <span class="stat-label">Просмотров за месяц</span>
         <span class="stat-value" id="statViews">0</span>
+        <span class="muted" id="viewsSourceNote"></span>
       </div>
       <div class="card stat-card">
         <span class="stat-label">Видео за месяц</span>
@@ -117,9 +124,12 @@
       ⚠ У канала очень много загрузок за месяц — посчитаны только последние отслеженные видео, реальные цифры могут быть выше.
     </p>
     <p class="disclaimer">
-      * Это приблизительная оценка на основе публичных страниц YouTube. Реальный доход зависит от гео и возраста зрителей,
-      сезона, ниши, длины роликов и вовлечённости рекламодателей. Точные цифры знает только владелец канала
-      (YouTube Studio → Аналитика → Доход).
+      * Пока мы не отслеживали канал ~30 дней, просмотры за месяц считаются только по видео, вышедшим за этот срок —
+      это ниже реальных цифр, если у канала много старых видео, которые продолжают смотреть. Как только счётчик
+      просмотров канала будет измерен нами дважды с разницей примерно в месяц, показатель станет «измеренным» —
+      настоящим приростом просмотров всего канала, как считает Social Blade. Хочешь точность уже сейчас — впиши свои
+      реальные цифры выше. Доход в любом случае лишь оценка: реальный зависит от гео и возраста зрителей, сезона,
+      ниши и вовлечённости рекламодателей. Точные цифры знает только владелец канала (YouTube Studio → Аналитика → Доход).
     </p>
   </section>
 

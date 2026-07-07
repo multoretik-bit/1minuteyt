@@ -74,6 +74,12 @@ function parseViewCount(t) {
   return Math.round(n);
 }
 
+function parseCompactNumber(t) {
+  if (!t) return null;
+  const n = parseInt(t.replace(/,/g, ''), 10);
+  return Number.isNaN(n) ? null : n;
+}
+
 function parseRelativeDays(t) {
   if (!t) return null;
   const m = t.match(/(\d+)\s+(second|minute|hour|day|week|month|year)/i);
@@ -145,7 +151,56 @@ async function fetchContinuation(apiKey, clientVersion, token) {
   return appended ? appended.continuationItems : null;
 }
 
-async function analyzeChannel(input) {
+const SNAPSHOT_MAX_AGE_MS = 45 * 86400000;
+const SNAPSHOT_MIN_GAP_MS = 12 * 3600000;
+const TARGET_WINDOW_MS = 30 * 86400000;
+
+async function getSnapshots(env, channelId) {
+  if (!env?.SNAPSHOTS) return [];
+  const raw = await env.SNAPSHOTS.get(`snap:${channelId}`);
+  if (!raw) return [];
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+async function recordSnapshotAndMeasure(env, channelId, currentViews, now) {
+  if (!channelId || currentViews === null) return null;
+  let snapshots = await getSnapshots(env, channelId);
+
+  // find the stored snapshot closest to 30 days ago (accept 20-40 day range)
+  let best = null;
+  for (const s of snapshots) {
+    const age = now - s.ts;
+    if (age >= 20 * 86400000 && age <= 40 * 86400000) {
+      if (!best || Math.abs(age - TARGET_WINDOW_MS) < Math.abs(now - best.ts - TARGET_WINDOW_MS)) best = s;
+    }
+  }
+
+  let measured = null;
+  if (best && currentViews >= best.views) {
+    const days = (now - best.ts) / 86400000;
+    const delta = currentViews - best.views;
+    measured = { views: Math.round((delta / days) * 30), days: Math.round(days) };
+  }
+
+  const last = snapshots[snapshots.length - 1];
+  if (!last || now - last.ts > SNAPSHOT_MIN_GAP_MS) {
+    snapshots = snapshots.filter((s) => now - s.ts <= SNAPSHOT_MAX_AGE_MS);
+    snapshots.push({ ts: now, views: currentViews });
+    if (env?.SNAPSHOTS) {
+      await env.SNAPSHOTS.put(`snap:${channelId}`, JSON.stringify(snapshots), {
+        expirationTtl: 120 * 86400,
+      });
+    }
+  }
+
+  return measured;
+}
+
+async function analyzeChannel(input, env) {
   const videosUrl = resolveVideosUrl(input);
   if (!videosUrl) throw new HttpError(400, 'Не удалось разобрать ссылку на канал.');
 
@@ -191,7 +246,7 @@ async function analyzeChannel(input) {
   if (continuationToken && videos[videos.length - 1]?.daysAgo <= 31) truncated = true;
 
   const lastMonth = videos.filter((v) => v.daysAgo <= 31);
-  const viewsLastMonth = lastMonth.reduce((s, v) => s + v.viewCount, 0);
+  const newVideoViews = lastMonth.reduce((s, v) => s + v.viewCount, 0);
   const secondsLastMonth = lastMonth.reduce((s, v) => s + (v.durationSec || 0), 0);
   const videosWithDuration = lastMonth.filter((v) => v.durationSec !== null).length;
 
@@ -199,15 +254,26 @@ async function analyzeChannel(input) {
   let subscribers = null;
   let lifetimeViews = null;
   let joined = null;
+  let channelId = canonicalMatch?.match(/\/channel\/(UC[\w-]+)/)?.[1] || null;
   try {
     const aboutUrl = videosUrl.replace(/\/videos$/, '/about');
     const { html: aboutHtml } = await fetchHtml(aboutUrl);
     subscribers = aboutHtml.match(/"subscriberCountText":"([^"]+)"/)?.[1] || null;
     lifetimeViews = aboutHtml.match(/"viewCountText":"([\d,]+) views"/)?.[1] || null;
     joined = aboutHtml.match(/"joinedDateText":\{"content":"([^"]+)"/)?.[1] || null;
+    if (!channelId) channelId = aboutHtml.match(/"channelId":"(UC[\w-]{20,})"/)?.[1] || null;
   } catch {
     // best-effort only
   }
+
+  // Measure real channel-wide view growth over ~30 days by comparing against a
+  // stored snapshot of the total view counter, since public per-video data only
+  // reflects videos published recently, not ongoing views on the back catalog.
+  const numericLifetimeViews = parseCompactNumber(lifetimeViews);
+  const measured = await recordSnapshotAndMeasure(env, channelId, numericLifetimeViews, Date.now());
+
+  const views = measured ? measured.views : newVideoViews;
+  const viewsSource = measured ? 'measured' : 'estimated';
 
   return {
     channel: {
@@ -221,7 +287,10 @@ async function analyzeChannel(input) {
     lastMonth: {
       videoCount: lastMonth.length,
       viewsWithKnownDuration: videosWithDuration,
-      views: viewsLastMonth,
+      views,
+      newVideoViews,
+      viewsSource,
+      measuredDays: measured?.days || null,
       seconds: secondsLastMonth,
       minutes: secondsLastMonth / 60,
       truncated,
@@ -237,7 +306,7 @@ class HttpError extends Error {
 }
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     if (request.method === 'OPTIONS') return new Response(null, { headers: corsHeaders() });
 
     const url = new URL(request.url);
@@ -247,7 +316,7 @@ export default {
     if (!channel) return json({ error: 'Параметр channel обязателен.' }, 400);
 
     try {
-      const result = await analyzeChannel(channel);
+      const result = await analyzeChannel(channel, env);
       return json(result);
     } catch (err) {
       const status = err instanceof HttpError ? err.status : 500;

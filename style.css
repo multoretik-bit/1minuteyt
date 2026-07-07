@@ -190,6 +190,7 @@ input:focus { border-color: var(--red); background: rgba(255,255,255,0.05); }
   color: var(--text);
 }
 
+.real-data-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
 .slider-row { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
 .slider-row input[type="range"] { flex: 1; accent-color: var(--red); }
 .slider-row input[type="number"] { max-width: 160px; }

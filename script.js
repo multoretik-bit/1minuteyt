@@ -15,6 +15,7 @@ const customRpmValue = $('customRpmValue');
 const realIncomeToggle = $('realIncomeToggle');
 const realIncomeRow = $('realIncomeRow');
 const realIncome = $('realIncome');
+const realViews = $('realViews');
 const analyzeBtn = $('analyzeBtn');
 const errorMsg = $('errorMsg');
 const progressCard = $('progressCard');
@@ -108,22 +109,30 @@ async function runAnalysis() {
       throw new Error(data.error || 'Не получилось проанализировать канал.');
     }
 
-    let effectiveRpm = selectedRpm;
+    const useRealViews = realIncomeToggle.checked && realViews.value && parseFloat(realViews.value) > 0;
+    const useRealIncome = realIncomeToggle.checked && realIncome.value && parseFloat(realIncome.value) > 0;
+
+    const views = useRealViews ? parseFloat(realViews.value) : data.lastMonth.views;
+    let viewsNote;
+    if (useRealViews) viewsNote = 'введено вручную';
+    else if (data.lastMonth.viewsSource === 'measured') viewsNote = `измерено за ${data.lastMonth.measuredDays} дн.`;
+    else viewsNote = 'оценка по новым видео за месяц*';
+
     let rpmLabel = `$${selectedRpm.toFixed(2)} / 1000 просмотров (оценка, ${
       selectedRegion === 'ru' ? 'Россия/СНГ' : selectedRegion === 'en' ? 'англоязычная аудитория' : 'своё значение'
     })`;
     let totalRevenue;
 
-    if (realIncomeToggle.checked && realIncome.value && parseFloat(realIncome.value) > 0) {
+    if (useRealIncome) {
       totalRevenue = parseFloat(realIncome.value);
       rpmLabel = 'твой реальный доход за месяц';
     } else {
-      totalRevenue = (data.lastMonth.views / 1000) * effectiveRpm;
+      totalRevenue = (views / 1000) * selectedRpm;
     }
 
     const revenuePerMinute = data.lastMonth.minutes > 0 ? totalRevenue / data.lastMonth.minutes : 0;
 
-    renderResults({ ...data, rpmLabel, totalRevenue, revenuePerMinute });
+    renderResults({ ...data, views, viewsNote, rpmLabel, totalRevenue, revenuePerMinute });
 
     setProgress(100, 'Готово');
     setTimeout(() => (progressCard.hidden = true), 400);
@@ -136,7 +145,7 @@ async function runAnalysis() {
 }
 
 function renderResults(data) {
-  const { channel, lastMonth, rpmLabel, totalRevenue, revenuePerMinute } = data;
+  const { channel, lastMonth, views, viewsNote, rpmLabel, totalRevenue, revenuePerMinute } = data;
 
   $('chThumb').src = channel.avatar || '';
   $('chTitle').textContent = channel.title || '—';
@@ -144,7 +153,8 @@ function renderResults(data) {
   $('chLifetimeViews').textContent = channel.lifetimeViews ? `${channel.lifetimeViews} просмотров за всё время` : '—';
   $('chJoined').textContent = channel.joined || '';
 
-  animateCount($('statViews'), lastMonth.views, (v) => fmtNumber(v));
+  animateCount($('statViews'), views, (v) => fmtNumber(v));
+  $('viewsSourceNote').textContent = viewsNote;
   animateCount($('statVideos'), lastMonth.videoCount, (v) => fmtNumber(v));
 
   const minutes = lastMonth.minutes;
