@@ -19,41 +19,16 @@
     <span class="brand-icon">▶</span>
     <span class="brand-text">1 Minute</span>
   </div>
-  <a class="topbar-link" href="https://console.cloud.google.com/apis/library/youtube.googleapis.com" target="_blank" rel="noopener">Получить API-ключ</a>
 </header>
 
 <main class="container">
 
   <section class="hero">
     <h1>Сколько канал зарабатывает <span class="accent">за 1 минуту</span> видео?</h1>
-    <p class="hero-sub">Вставь ссылку на YouTube-канал — посчитаем суммарные просмотры, оценим доход и выведем средний заработок на каждую минуту контента.</p>
+    <p class="hero-sub">Вставь ссылку на YouTube-канал — посчитаем его просмотры за последний месяц, оценим доход и выведем средний заработок на каждую минуту контента. Без регистрации и ключей.</p>
   </section>
 
   <section class="card form-card" id="formCard">
-
-    <div class="field">
-      <label for="apiKey">
-        API-ключ YouTube Data API v3
-        <button type="button" class="ghost-btn" id="toggleHelp">как получить?</button>
-      </label>
-      <div class="input-row">
-        <input type="password" id="apiKey" placeholder="AIzaSy...">
-        <button type="button" class="icon-btn" id="toggleKeyVisibility" title="Показать/скрыть">👁</button>
-      </div>
-      <label class="checkbox-row">
-        <input type="checkbox" id="saveKey">
-        <span>Запомнить ключ в этом браузере</span>
-      </label>
-
-      <div class="help-box" id="helpBox" hidden>
-        <ol>
-          <li>Открой <a href="https://console.cloud.google.com/" target="_blank" rel="noopener">console.cloud.google.com</a> и создай проект (бесплатно).</li>
-          <li>В библиотеке API найди и включи <b>YouTube Data API v3</b>.</li>
-          <li>Зайди в раздел <b>Credentials → Create Credentials → API key</b>.</li>
-          <li>Скопируй ключ и вставь в поле выше. Ключ хранится только в твоём браузере и никуда не отправляется, кроме googleapis.com.</li>
-        </ol>
-      </div>
-    </div>
 
     <div class="field">
       <label for="channelInput">Ссылка на канал, @handle или его ID</label>
@@ -76,11 +51,11 @@
     <div class="field">
       <label class="checkbox-row toggle-label">
         <input type="checkbox" id="realIncomeToggle">
-        <span>У меня есть реальный доход за последние 30 дней — использовать его вместо оценки по RPM</span>
+        <span>У меня есть реальный доход за последний месяц — использовать его вместо оценки по RPM</span>
       </label>
       <div class="slider-row" id="realIncomeRow" hidden>
         <input type="number" id="realIncome" min="0" step="0.01" placeholder="Например, 240">
-        <span class="muted">$ за последние 30 дней</span>
+        <span class="muted">$ за последний месяц</span>
       </div>
     </div>
 
@@ -103,15 +78,21 @@
         <h2 id="chTitle">—</h2>
         <p id="chSubs" class="muted">—</p>
       </div>
+      <div class="channel-lifetime">
+        <span id="chLifetimeViews">—</span>
+        <span class="muted" id="chJoined">—</span>
+      </div>
     </div>
+
+    <p class="section-label">За последние 30 дней</p>
 
     <div class="stat-grid">
       <div class="card stat-card">
-        <span class="stat-label">Всего просмотров</span>
+        <span class="stat-label">Просмотров за месяц</span>
         <span class="stat-value" id="statViews">0</span>
       </div>
       <div class="card stat-card">
-        <span class="stat-label">Видео на канале</span>
+        <span class="stat-label">Видео за месяц</span>
         <span class="stat-value" id="statVideos">0</span>
       </div>
       <div class="card stat-card">
@@ -123,7 +104,7 @@
         <span class="stat-value small" id="statRpm">—</span>
       </div>
       <div class="card stat-card">
-        <span class="stat-label">Оценка дохода канала</span>
+        <span class="stat-label">Оценка дохода за месяц</span>
         <span class="stat-value" id="statRevenue">$0</span>
       </div>
       <div class="card stat-card highlight">
@@ -132,16 +113,19 @@
       </div>
     </div>
 
+    <p class="disclaimer" id="truncatedNote" hidden>
+      ⚠ У канала очень много загрузок за месяц — посчитаны только последние отслеженные видео, реальные цифры могут быть выше.
+    </p>
     <p class="disclaimer">
-      * Это приблизительная оценка на основе публичных данных YouTube. Реальный доход зависит от гео и возраста зрителей,
-      сезона, ниши, длины роликов, вовлечённости рекламодателей и включённой монетизации у самого канала.
-      Точные цифры знает только владелец канала (YouTube Studio → Аналитика → Доход).
+      * Это приблизительная оценка на основе публичных страниц YouTube. Реальный доход зависит от гео и возраста зрителей,
+      сезона, ниши, длины роликов и вовлечённости рекламодателей. Точные цифры знает только владелец канала
+      (YouTube Studio → Аналитика → Доход).
     </p>
   </section>
 
 </main>
 
-<footer class="footer">Работает напрямую в браузере через YouTube Data API v3. Ключ и данные никуда не сохраняются.</footer>
+<footer class="footer">Данные читаются с публичных страниц YouTube через собственный прокси-сервер. Никакой регистрации и ключей не требуется.</footer>
 
 <script src="script.js"></script>
 </body>

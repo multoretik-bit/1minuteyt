@@ -257,10 +257,22 @@ input:focus { border-color: var(--red); background: rgba(255,255,255,0.05); }
 .results { margin-top: 28px; display: flex; flex-direction: column; gap: 20px; animation: fadeUp 0.5s ease; }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
-.channel-card { display: flex; align-items: center; gap: 16px; }
+.channel-card { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .channel-avatar { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 2px solid var(--panel-border); }
+.channel-meta { flex: 1; min-width: 160px; }
 .channel-meta h2 { margin: 0 0 4px; font-family: var(--font-display); font-size: 1.2rem; }
 .channel-meta p { margin: 0; }
+.channel-lifetime { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; font-size: 0.85rem; }
+.channel-lifetime span:first-child { font-family: var(--font-display); font-weight: 700; color: var(--text); }
+
+.section-label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 4px 2px -6px;
+}
 
 .stat-grid {
   display: grid;
