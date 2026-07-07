@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>1 Minute — сколько зарабатывает YouTube-канал за минуту</title>
+<title>1 Minute — сколько ты зарабатываешь за 1 минуту просмотра</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>▶️</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -24,118 +24,54 @@
 <main class="container">
 
   <section class="hero">
-    <h1>Сколько канал зарабатывает <span class="accent">за 1 минуту</span> видео?</h1>
-    <p class="hero-sub">Вставь ссылку на YouTube-канал — посчитаем его просмотры за последний месяц, оценим доход и выведем средний заработок на каждую минуту контента. Без регистрации и ключей.</p>
+    <h1>Сколько вы зарабатываете <span class="accent">за 1 минуту</span> просмотра?</h1>
+    <p class="hero-sub">Впиши доход за месяц и часы просмотра за месяц из YouTube Studio — посчитаем, сколько денег приносит одна минута просмотра твоего контента.</p>
   </section>
 
   <section class="card form-card" id="formCard">
 
     <div class="field">
-      <label for="channelInput">Ссылка на канал, @handle или его ID</label>
-      <input type="text" id="channelInput" placeholder="https://www.youtube.com/@mrbeast">
+      <label for="incomeInput">Доход за месяц, $</label>
+      <input type="number" id="incomeInput" min="0" step="0.01" placeholder="Например, 250" inputmode="decimal">
     </div>
 
     <div class="field">
-      <label>Регион аудитории (влияет на оценку RPM — дохода за 1000 просмотров)</label>
-      <div class="pill-group" id="regionPills">
-        <button type="button" class="pill active" data-region="ru" data-rpm="0.7">🇷🇺 Россия / СНГ · ~$0.7</button>
-        <button type="button" class="pill" data-region="en" data-rpm="1.75">🌍 Англоязычный · ~$1.5–2</button>
-        <button type="button" class="pill" data-region="custom" data-rpm="">✏️ Свой RPM</button>
-      </div>
-      <div class="slider-row" id="customRpmRow" hidden>
-        <input type="range" id="customRpm" min="0.1" max="6" step="0.1" value="1.2">
-        <span id="customRpmValue">$1.2</span> <span class="muted">за 1000 просмотров</span>
-      </div>
+      <label for="hoursInput">Часы просмотра за месяц (Watch time, YouTube Studio → Аналитика)</label>
+      <input type="number" id="hoursInput" min="0" step="0.01" placeholder="Например, 3200" inputmode="decimal">
     </div>
 
-    <div class="field">
-      <label class="checkbox-row toggle-label">
-        <input type="checkbox" id="realIncomeToggle">
-        <span>У меня есть точные данные за месяц из YouTube Studio — использовать их вместо оценки</span>
-      </label>
-      <div class="real-data-grid" id="realIncomeRow" hidden>
-        <div class="slider-row">
-          <input type="number" id="realViews" min="0" step="1" placeholder="Например, 1400000">
-          <span class="muted">просмотров за месяц</span>
-        </div>
-        <div class="slider-row">
-          <input type="number" id="realIncome" min="0" step="0.01" placeholder="Например, 240">
-          <span class="muted">$ дохода за месяц</span>
-        </div>
-      </div>
-    </div>
-
-    <button class="analyze-btn" id="analyzeBtn">Анализировать канал</button>
+    <button class="analyze-btn" id="calcBtn">Посчитать</button>
 
     <p class="error-msg" id="errorMsg" hidden></p>
   </section>
 
-  <section class="card progress-card" id="progressCard" hidden>
-    <div class="spinner"></div>
-    <p id="progressText">Ищем канал…</p>
-    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-  </section>
-
   <section class="results" id="results" hidden>
-
-    <div class="card channel-card">
-      <img id="chThumb" class="channel-avatar" alt="">
-      <div class="channel-meta">
-        <h2 id="chTitle">—</h2>
-        <p id="chSubs" class="muted">—</p>
-      </div>
-      <div class="channel-lifetime">
-        <span id="chLifetimeViews">—</span>
-        <span class="muted" id="chJoined">—</span>
-      </div>
+    <div class="card stat-card highlight">
+      <span class="stat-label">Вы зарабатываете</span>
+      <span class="stat-value big" id="statPerMinute">$0</span>
+      <span class="stat-label">за 1 минуту просмотра вашего контента</span>
     </div>
-
-    <p class="section-label">За последние 28 дней</p>
 
     <div class="stat-grid">
       <div class="card stat-card">
-        <span class="stat-label">Просмотров за месяц</span>
-        <span class="stat-value" id="statViews">0</span>
-        <span class="muted" id="viewsSourceNote"></span>
+        <span class="stat-label">Доход за месяц</span>
+        <span class="stat-value" id="statIncome">$0</span>
       </div>
       <div class="card stat-card">
-        <span class="stat-label">Видео за месяц</span>
-        <span class="stat-value" id="statVideos">0</span>
-      </div>
-      <div class="card stat-card">
-        <span class="stat-label">Суммарная длительность</span>
-        <span class="stat-value" id="statDuration">0</span>
-      </div>
-      <div class="card stat-card">
-        <span class="stat-label">Использованный RPM</span>
-        <span class="stat-value small" id="statRpm">—</span>
-      </div>
-      <div class="card stat-card">
-        <span class="stat-label">Оценка дохода за месяц</span>
-        <span class="stat-value" id="statRevenue">$0</span>
-      </div>
-      <div class="card stat-card highlight">
-        <span class="stat-label">Доход за 1 минуту видео</span>
-        <span class="stat-value big" id="statPerMinute">$0</span>
+        <span class="stat-label">Просмотрено минут за месяц</span>
+        <span class="stat-value" id="statMinutes">0</span>
       </div>
     </div>
 
-    <p class="disclaimer" id="truncatedNote" hidden>
-      ⚠ У канала очень много загрузок за месяц — посчитаны только последние отслеженные видео, реальные цифры могут быть выше.
-    </p>
     <p class="disclaimer">
-      * Пока мы не отслеживали канал ~28 дней, просмотры считаются только по видео, вышедшим за этот срок —
-      это ниже реальных цифр, если у канала много старых видео, которые продолжают смотреть. Как только счётчик
-      просмотров канала будет измерен нами дважды с разницей примерно в 28 дней, показатель станет «измеренным» —
-      настоящим приростом просмотров всего канала, как считает Social Blade. Хочешь точность уже сейчас — впиши свои
-      реальные цифры выше. Доход в любом случае лишь оценка: реальный зависит от гео и возраста зрителей, сезона,
-      ниши и вовлечённости рекламодателей. Точные цифры знает только владелец канала (YouTube Studio → Аналитика → Доход).
+      Расчёт: доход за месяц ÷ (часы просмотра × 60). Точность результата зависит только от точности введённых тобой
+      цифр — оба показателя бери из YouTube Studio → Аналитика (доход — вкладка «Доход», часы — «Время просмотра»).
     </p>
   </section>
 
 </main>
 
-<footer class="footer">Данные читаются с публичных страниц YouTube через собственный прокси-сервер. Никакой регистрации и ключей не требуется.</footer>
+<footer class="footer">Никаких ссылок, ключей и запросов куда-либо — просто калькулятор в твоём браузере.</footer>
 
 <script src="script.js"></script>
 </body>
